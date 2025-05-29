@@ -1,0 +1,36 @@
+pip install streamlit pandas plotly
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+# 데이터 로딩
+daily_df = pd.read_excel("VOC_시설개선.xlsx", sheet_name="일일업무처리결과")
+stats_df = pd.read_excel("VOC_시설개선.xlsx", sheet_name="통계")
+
+# 날짜형 변환
+daily_df['접수일자'] = pd.to_datetime(daily_df['접수일자'])
+
+# 월별 시설개선 건수
+monthly_stats = stats_df.groupby('월')['시설개선(건)'].sum().reset_index()
+
+# Streamlit 시작
+st.title("🏢 교육문화팀 2025년 VOC 및 시설개선 대시보드")
+
+# KPI 카드
+st.metric("총 VOC 건수", f"{len(daily_df)} 건")
+avg_days = daily_df['처리기간'].mean()
+st.metric("평균 처리 기간", f"{avg_days:.1f} 일")
+
+# 월별 추이
+fig1 = px.bar(monthly_stats, x='월', y='시설개선(건)', title='월별 시설개선 건수')
+st.plotly_chart(fig1)
+
+# 장소별 상위 10개
+top_places = daily_df['발생장소'].value_counts().head(10).reset_index()
+top_places.columns = ['장소', '건수']
+fig2 = px.bar(top_places, x='건수', y='장소', orientation='h', title='장소별 VOC 상위 10')
+st.plotly_chart(fig2)
+
+# 최근 VOC 테이블
+st.subheader("📋 최근 VOC 리스트")
+st.dataframe(daily_df[['접수일자', 'VOC 및 시설개선', '발생장소', '처리내용']].sort_values(by='접수일자', ascending=False).head(10))
